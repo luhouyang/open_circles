@@ -4,12 +4,6 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 ## OC 1.0 - Computer Vision from Convolutional to Transformers
 
-**Reading Materials**
-
-- [Hisory of CNN](https://towardsdatascience.com/the-history-of-convolutional-neural-networks-for-image-classification-1989-today-5ea8a5c5fe20/)
-
-- LeNet-1 | [Original CNN Paper](https://www.academia.edu/download/47948178/lecun-89e.pdf)
-
 **Setup & Run**
 
 1. Clone this repo
@@ -18,7 +12,7 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
     $ git clone --depth 1 https://github.com/luhouyang/open_circles.git
     ```
 
-1. Create a Python environment
+1. Create a Python environment (replace with your own directory)
 
     ```console
     $ python3.12 -m venv D:\User\test
@@ -28,7 +22,7 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 1. Restart your IDE
 
-1. Activate your environment at the terminal (change according to your path)
+1. Activate your environment at the terminal (replace with your own directory)
 
     ```console
     $ D:/User/test/Scripts/activate.bat
@@ -42,6 +36,30 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
     cd OC01
     pip install -r requirements.txt
     ```
+
+**Reading Materials**
+
+![History of CNN Timeline](/OC01/media/history_of_CNN.png)
+
+- [Hisory of CNN](https://towardsdatascience.com/the-history-of-convolutional-neural-networks-for-image-classification-1989-today-5ea8a5c5fe20/)
+
+- LeNet-1 | [Original CNN Paper](https://www.academia.edu/download/47948178/lecun-89e.pdf)
+
+- LeNet-5 | [paper](https://www.researchgate.net/publication/2985446_Gradient-Based_Learning_Applied_to_Document_Recognition)
+
+- AlexNet | [paper](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwie-_vy_d6LAxW_zDgGHQIBO9gQFnoECAgQAQ&url=https%3A%2F%2Fproceedings.neurips.cc%2Fpaper%2F4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf&usg=AOvVaw26V5YkBm0FS972qI4eBNgu&opi=89978449) | [PyTorch](https://pytorch.org/hub/pytorch_vision_alexnet/)
+
+- GoogLeNet | [paper](https://arxiv.org/abs/1409.4842) | [PyTorch](https://pytorch.org/hub/pytorch_vision_googlenet/)
+
+- VGGNet | [paper](https://arxiv.org/abs/1409.1556) | [PyTorch](https://pytorch.org/hub/pytorch_vision_vgg/)
+
+- ResNet | [paper](https://arxiv.org/abs/1512.03385) | [PyTorch](https://pytorch.org/hub/pytorch_vision_resnet/)
+
+- DenseNet | [paper](https://arxiv.org/abs/1608.06993) | [PyTorch](https://pytorch.org/hub/pytorch_vision_densenet/)
+
+- MobileNetV1 | [paper](https://arxiv.org/abs/1704.04861) | MobileNetV2 | [paper](https://arxiv.org/abs/1801.04381) | [PyTorch](https://pytorch.org/hub/pytorch_vision_mobilenet_v2/) | MobileNetV3 | [paper](https://arxiv.org/abs/1905.02244) | [PyTorch](https://pytorch.org/vision/main/models/mobilenetv3.html) | MobileNetV4 | [paper](https://arxiv.org/abs/2404.10518) | [Hugging Face](https://huggingface.co/collections/timm/mobilenetv4-pretrained-weights-6669c22cda4db4244def9637)
+
+- ConvNeXt | [paper](https://arxiv.org/abs/2201.03545) | [PyTorch](https://pytorch.org/vision/main/models/convnext.html)
 
 ## Future Additions TODO
 
