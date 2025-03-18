@@ -8,9 +8,27 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 - [OC 1.0](/OC01/)
 
-- [OC 2.0](/)
+- [OC 2.0 | UPCOMING!](/)
 
 ## OC 1.0 - Computer Vision from Convolutional to Transformers
+
+*Any code generated with GenAI is marked with explicit docstring comments*
+
+**Dataset**
+
+Download the dataset from [Kaggle]() with your preferred format. We recommend `parquet`.
+
+- parquet
+
+- csv
+
+- pickle
+
+- jpg
+
+- jpg + json
+
+![Dataset preview](/OC01/media/catdataset_viz.png)
 
 **Setup & Run**
 
@@ -44,13 +62,13 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
     ```console
     cd OC01
+    pip install polars pillow pycocotools tqdm ipykernel
+    ```
+
+    *install with caution, as the pytorch version in requirements.txt might not match*
+
+    ```
     pip install -r requirements.txt
-    ```
-
-    *alternatively use pip to auto resolve the packages*
-
-    ```
-    pip install polars pillow pycocotools
     ```
 
     Check the [PyTorch Website](https://pytorch.org)
@@ -82,6 +100,12 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 - MobileNetV1 | [paper](https://arxiv.org/abs/1704.04861) | MobileNetV2 | [paper](https://arxiv.org/abs/1801.04381) | [PyTorch](https://pytorch.org/hub/pytorch_vision_mobilenet_v2/) | MobileNetV3 | [paper](https://arxiv.org/abs/1905.02244) | [PyTorch](https://pytorch.org/vision/main/models/mobilenetv3.html) | MobileNetV4 | [paper](https://arxiv.org/abs/2404.10518) | [Hugging Face](https://huggingface.co/collections/timm/mobilenetv4-pretrained-weights-6669c22cda4db4244def9637)
 
 - ConvNeXt | [paper](https://arxiv.org/abs/2201.03545) | [PyTorch](https://pytorch.org/vision/main/models/convnext.html)
+
+**Data Preprocessing & Visualization**
+
+[preprocessing](/OC01/preprocess/)
+
+![Cats images & Masks](/OC01/media/dataset_viz.png)
 
 ## Future Additions TODO
 
