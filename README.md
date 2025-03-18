@@ -16,17 +16,19 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 **Dataset**
 
-Download the dataset from [Kaggle]() with your preferred format. We recommend `parquet`.
+Download the dataset from [Kaggle]() with your preferred format. We recommend `pkl`.
 
-- parquet
+- pickle (0.706020459998399 seconds)
 
-- csv
+- parquet (1.2935579999990297 seconds)
 
-- pickle
+- csv (ran out of memory 😰)
 
-- jpg
+- jpg (not implemented)
 
-- jpg + json
+- jpg + json (not implemented)
+
+[dataset script](/OC01/dataset/catdataset.py)
 
 ![Dataset preview](/OC01/media/catdataset_viz.png)
 

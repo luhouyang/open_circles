@@ -137,9 +137,10 @@ if __name__ == '__main__':
         )
 
     # 5 iterations
-    # parquet:  6.492156499996781   seconds
-    # pkl:      3.5605880999937654  seconds
-    print(timeit.timeit("getds()", globals=globals(), number=5))
+    # parquet:  6.467789999995148   seconds     1.2935579999990297  s/per
+    # pkl:      3.530102299991995   seconds     0.706020459998399   s/per
+    tt = timeit.timeit("getds()", globals=globals(), number=5)
+    print(f"5 iter: {tt} s\t1 iter: {tt/5}")
 
     ds = getds()
 
