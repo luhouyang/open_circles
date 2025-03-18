@@ -2,6 +2,14 @@
 
 Open Circles : Bridging Minds Beyond Borders is an international university collaboration connecting students globally through IT and computer science. This immersive experience features workshops, talks, and activities that inspire, educate, and foster cross-cultural connections, creating a global network of future tech leaders.
 
+## OC Archives
+
+*Add all past OC projects here, swap the following h2 tag with latest OC documentation*
+
+- [OC 1.0](/OC01/)
+
+- [OC 2.0](/)
+
 ## OC 1.0 - Computer Vision from Convolutional to Transformers
 
 **Setup & Run**
@@ -30,11 +38,25 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
     You should see `(test) C:\Users\...\open_circles>` in the terminal
 
-1. Install packages
+1. Install packages (for pytorch please change according to your device capabilities)
+
+    **IMPORTANT! BEFORE INSTALLING CHECK THAT YOUR ENVIRNOMENT IS ACTIVE i.e. (your_env_name) C:\\...**
 
     ```console
     cd OC01
     pip install -r requirements.txt
+    ```
+
+    *alternatively use pip to auto resolve the packages*
+
+    ```
+    pip install polars pillow pycocotools
+    ```
+
+    Check the [PyTorch Website](https://pytorch.org)
+
+    ```console
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
     ```
 
 **Reading Materials**
