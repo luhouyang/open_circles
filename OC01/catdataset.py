@@ -22,6 +22,8 @@ import torch.nn as nn
 
 class CatDataset(Dataset):
 
+    __slots__ = ['data', 'masks', 'transform']
+
     def __init__(
         self,
         root: str,
@@ -40,7 +42,7 @@ class CatDataset(Dataset):
             'pkl',
         ]
 
-        split_selection = ['train', 'val']
+        split_selection = ['train', 'valid', 'test']
 
         if format not in allowed_formats:
             raise ValueError(
@@ -145,6 +147,7 @@ if __name__ == '__main__':
     ds = getds()
 
     print(ds.__len__())
+    
     """Visualization code was generated with GenAI"""
     import matplotlib.pyplot as plt
 

@@ -64,7 +64,7 @@ Download the dataset from [Kaggle]() with your preferred format. We recommend `p
 
     ```console
     cd OC01
-    pip install polars pillow pycocotools tqdm ipykernel
+    pip install polars pillow pycocotools tqdm ipykernel torchinfo
     ```
 
     *install with caution, as the pytorch version in requirements.txt might not match*

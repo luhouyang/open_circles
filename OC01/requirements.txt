@@ -44,6 +44,7 @@ stack-data==0.6.3
 sympy==1.13.1
 torch==2.6.0+cu124
 torchaudio==2.6.0+cu124
+torchinfo==1.8.0
 torchvision==0.21.0+cu124
 tornado==6.4.2
 tqdm==4.67.1
