@@ -88,6 +88,8 @@ def main():
         betas=(0.9, 0.999),
     )
 
+    ### a bit about schedulers & lr
+    ### https://medium.com/data-science/a-visual-guide-to-learning-rate-schedulers-in-pytorch-24bbb262c863
     scheduler = optim.lr_scheduler.StepLR(
         optimizer=optimizer,
         step_size=10,
