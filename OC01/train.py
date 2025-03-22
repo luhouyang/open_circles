@@ -72,7 +72,8 @@ def main():
     model = CNNSegmentationModel()
 
     # criterion = CNNSegmentationModelLoss()
-    criterion = F.cross_entropy
+    # criterion = F.cross_entropy
+    criterion = F.nll_loss
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
     ### a bit about Adam & AdamW
@@ -124,7 +125,7 @@ def main():
         for i, (data, label) in tqdm(enumerate(train_loader),
                                      total=len(train_loader)):
             data = data.cuda()
-            label = label.cuda().permute(0, 3, 1, 2).float()
+            label = label.cuda().permute(0, 3, 1, 2)
 
             pred = model(data)
             loss = criterion(pred, label)

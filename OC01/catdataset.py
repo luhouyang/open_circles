@@ -133,16 +133,13 @@ if __name__ == '__main__':
             mask_channels=mask_channels,
         )
 
-    # # 5 iterations
-    # # parquet:  6.467789999995148   seconds     1.2935579999990297  s/per
-    # # pkl:      3.530102299991995   seconds     0.706020459998399   s/per
-    # tt = timeit.timeit("getds()", globals=globals(), number=5)
-    # print(f"5 iter: {tt} s\t1 iter: {tt/5}")
+    # 5 iterations
+    # parquet:  6.467789999995148   seconds     1.2935579999990297  s/per
+    # pkl:      3.530102299991995   seconds     0.706020459998399   s/per
+    tt = timeit.timeit("getds()", globals=globals(), number=5)
+    print(f"5 iter: {tt} s\t1 iter: {tt/5}")
 
     ds = getds()
-
-    data, label = ds.__getitem__(0)
-    print(data, label)
 
     print(ds.__len__())
     # """Visualization code was generated with GenAI"""
