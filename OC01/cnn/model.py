@@ -13,14 +13,40 @@ import torch.nn.functional as F
 
 class CNNSegmentationModel(nn.Module):
 
+    # def __init__(self):
+    #     super(CNNSegmentationModel, self).__init__()
+
+    #     self.down_conv1 = nn.Conv2d(3, 32, 3)
+
+    # def forward(self, x):
+    #     x = self.down_conv1(x)
+
+    #     return x
     def __init__(self):
         super(CNNSegmentationModel, self).__init__()
-
-        self.down_conv1 = nn.Conv2d(3, 32, 3)
-
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 16, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2)
+        )
+        
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Conv2d(32, 16, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(16, 16, 4, stride=2, padding=1),
+            nn.Conv2d(16, 8, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(8, 1, 4, stride=2, padding=1)
+        )
+        
     def forward(self, x):
-        x = self.down_conv1(x)
-
+        x = self.encoder(x)
+        x = self.decoder(x)
         return x
 
 
