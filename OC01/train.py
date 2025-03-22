@@ -123,7 +123,6 @@ def main():
 
         for i, (data, label) in tqdm(enumerate(train_loader),
                                      total=len(train_loader)):
-            print(data, label.shape, i)
             data = data.cuda()
             label = label.cuda().permute(0, 3, 1, 2).float()
 
@@ -145,7 +144,7 @@ def main():
             mIoU /= NUM_CLASSES
 
             epoch_train_acc_list.append(acc)
-            epoch_train_loss_list.append(loss)
+            epoch_train_loss_list.append(loss.item())
             epoch_train_mIoU_list.append(mIoU)
 
         scheduler.step()
@@ -171,7 +170,8 @@ def main():
                 pred = model(data)
                 loss = criterion(pred, label)
 
-                pred_choice = pred.cpu().data.max(1)[1].numpy()
+                label = label.cpu().numpy().astype('int64')
+                pred_choice = pred.cpu().data.max(1)[1].numpy().astype('int64')
                 correct = np.sum(pred_choice == label)
                 acc = correct / ACC_DIVISOR
 
@@ -181,7 +181,7 @@ def main():
                 mIoU /= NUM_CLASSES
 
                 epoch_test_acc_list.append(acc)
-                epoch_test_loss_list.append(loss)
+                epoch_test_loss_list.append(loss.item())
                 epoch_test_mIoU_list.append(mIoU)
 
         test_acc = np.mean(epoch_test_acc_list)
