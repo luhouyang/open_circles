@@ -22,6 +22,7 @@ from cnn.model import CNNSegmentationModel, CNNSegmentationModelLoss
 def main():
     EPOCHS = 20
     WORKERS = 2  # number of cpu to load data
+    PREFETCH_FACTOR = 4  # number of batch to prefetch
     BATCH_SIZE = 32
     LR = 0.001  # Optimizer learning rate
     WEIGHT_DECAY = 0.01  # L2 Regularization
@@ -46,7 +47,7 @@ def main():
         shuffle=True,
         pin_memory=True,
         num_workers=WORKERS,
-        prefetch_factor=2,
+        prefetch_factor=PREFETCH_FACTOR,
         drop_last=True,
     )
 
@@ -63,7 +64,7 @@ def main():
         shuffle=True,
         pin_memory=True,
         num_workers=WORKERS,
-        prefetch_factor=2,
+        prefetch_factor=PREFETCH_FACTOR,
         drop_last=False,
     )
     print("DATASET LOADED\n")
@@ -72,8 +73,7 @@ def main():
     model = CNNSegmentationModel()
 
     # criterion = CNNSegmentationModelLoss()
-    # criterion = F.cross_entropy
-    criterion = F.nll_loss
+    criterion = F.binary_cross_entropy_with_logits
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
     ### a bit about Adam & AdamW
@@ -125,7 +125,7 @@ def main():
         for i, (data, label) in tqdm(enumerate(train_loader),
                                      total=len(train_loader)):
             data = data.cuda()
-            label = label.cuda().permute(0, 3, 1, 2)
+            label = label.cuda().permute(0, 3, 1, 2).float()
 
             pred = model(data)
             loss = criterion(pred, label)
