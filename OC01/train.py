@@ -37,7 +37,7 @@ def main():
         dataset=CatDataset(
             root=ROOT,
             split='train',
-            format='pkl',
+            fformat='pkl',
             image_size=IMAGE_SIZE,
             image_channels=IMAGE_CHANNELS,
             mask_channels=NUM_CLASSES,
@@ -54,7 +54,7 @@ def main():
         dataset=CatDataset(
             root=ROOT,
             split='test',
-            format='pkl',
+            fformat='pkl',
             image_size=IMAGE_SIZE,
             image_channels=IMAGE_CHANNELS,
             mask_channels=NUM_CLASSES,
@@ -154,7 +154,9 @@ def main():
         train_loss = np.mean(epoch_train_loss_list)
         train_mIoU = np.mean(epoch_train_mIoU_list)
 
-        print(f"TRAIN | Loss: {train_loss}\t| Acc: {train_acc}\t| mIoU: {train_mIoU}")
+        print(
+            f"TRAIN | Loss: {train_loss}\t| Acc: {train_acc}\t| mIoU: {train_mIoU}"
+        )
 
         epoch_test_loss_list = []
         epoch_test_acc_list = []
@@ -189,7 +191,9 @@ def main():
         test_loss = np.mean(epoch_test_loss_list)
         test_mIoU = np.mean(epoch_test_mIoU_list)
 
-        print(f"TEST | Loss: {test_loss}\t| Acc: {test_acc}\t| mIoU: {test_mIoU}\n")
+        print(
+            f"TEST | Loss: {test_loss}\t| Acc: {test_acc}\t| mIoU: {test_mIoU}\n"
+        )
 
 
 if __name__ == '__main__':

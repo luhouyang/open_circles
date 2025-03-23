@@ -28,7 +28,7 @@ class CatDataset(Dataset):
         self,
         root: str,
         split: str = 'train',
-        format: str = 'parquet',
+        fformat: str = 'parquet',
         transform: Optional[Callable] = None,
         image_size=[224, 224],
         image_channels: int = 3,
@@ -44,9 +44,9 @@ class CatDataset(Dataset):
 
         split_selection = ['train', 'valid', 'test']
 
-        if format not in allowed_formats:
+        if fformat not in allowed_formats:
             raise ValueError(
-                f'Selection {format} is not valid. Choose from: {" | ".join(allowed_formats)}'
+                f'Selection {fformat} is not valid. Choose from: {" | ".join(allowed_formats)}'
             )
 
         if split not in split_selection:
@@ -58,8 +58,8 @@ class CatDataset(Dataset):
         if not root_path.exists():
             raise ValueError(f'Directory {root} does not exist.')
 
-        if format == 'parquet':
-            data_path = root_path / format / f"{split}_dataset.parquet"
+        if fformat == 'parquet':
+            data_path = root_path / f"{fformat}/{split}_dataset.parquet"
             if not data_path.exists():
                 raise ValueError(f'File {data_path} not found.')
 
@@ -70,17 +70,17 @@ class CatDataset(Dataset):
             # DO NOT delete formatting comments starting with 'yapf'
             # yapf: disable
             self.data = (dataset[:, :split_at]
-                .astype('float32')
+                .astype(np.uint8)
                 .reshape(-1, image_size[0], image_size[1], image_channels)
-                )/255.0
+                )
 
             self.masks = (dataset[:, split_at:]
                 .reshape(-1, image_size[0], image_size[1], mask_channels)
                 )
             # yapf: enable
 
-        elif format == 'pkl':
-            data_path = root_path / format / f"{split}_dataset.pkl"
+        elif fformat == 'pkl':
+            data_path = root_path / f"{fformat}/{split}_dataset.pkl"
             if not data_path.exists():
                 raise ValueError(f'File {data_path} not found.')
 
@@ -90,8 +90,8 @@ class CatDataset(Dataset):
             images = [pickle.loads(img) for img, mask in dataset]
             masks = [pickle.loads(mask) for img, mask in dataset]
 
-            self.data = np.stack(images).astype(np.float32).reshape(
-                -1, image_size[0], image_size[1], image_channels) / 255.0
+            self.data = np.stack(images).astype(np.uint8).reshape(
+                -1, image_size[0], image_size[1], image_channels)
 
             self.masks = np.stack(masks).astype(np.uint8).reshape(
                 -1, image_size[0], image_size[1], mask_channels)
@@ -127,60 +127,76 @@ if __name__ == '__main__':
         return CatDataset(
             root=root,
             split='train',
-            format='pkl',
+            fformat='pkl',
             image_size=image_size,
             image_channels=image_channels,
             mask_channels=mask_channels,
         )
 
+    ds = getds()
+
     # 5 iterations
     # parquet:  6.467789999995148   seconds     1.2935579999990297  s/per
     # pkl:      3.530102299991995   seconds     0.706020459998399   s/per
     tt = timeit.timeit("getds()", globals=globals(), number=5)
+
+    data, label = ds.__getitem__(0)
+    print(data, label)
+    print(f"Number of data: {ds.__len__()}")
     print(f"5 iter: {tt} s\t1 iter: {tt/5}")
+    """
+    Visualization code was generated with GenAI
+    Manually commented on functionality
+    """
+    import matplotlib.pyplot as plt
 
-    ds = getds()
+    # Unnormalize function
+    # 1. Convert [Tensor] to [np.array]
+    # 2. Transpose image shape from (c, h, w) -> (h, w, c)
+    # 3. Unnormalize image, p = (x * σ) + μ
+    # 4. Multiply by 255.0 to reverse the transforms.ToTensor() operation
+    # 5. Clip pixel values to between 0, 255
+    def unnormalize(image, mean, std):
+        image = image.numpy().transpose(1, 2, 0)
+        # NOTE: Normalize function
+        # Reading (Normalization): https://medium.com/@piyushkashyap045/image-normalization-in-pytorch-from-tensor-conversion-to-scaling-3951b6337bc8
+        # Reading (VGG16 Transforms): https://pytorch.org/vision/stable/models/generated/torchvision.models.vgg16.html#torchvision.models.vgg16:~:text=Finally%20the%20values%20are%20first%20rescaled%20to%20%5B0.0%2C%201.0%5D%20and%20then%20normalized%20using%20mean%3D%5B0.485%2C%200.456%2C%200.406%5D%20and%20std%3D%5B0.229%2C%200.224%2C%200.225%5D.
+        # x = (p - μ) / σ
+        # To reverse this operation, inverse the function
+        # p = (x * σ) + μ
+        image = ((image * np.array(std)) + np.array(mean)) * 255.0
+        image = np.clip(image, 0, 255)
+        return image
 
-    print(ds.__len__())
-    # """Visualization code was generated with GenAI"""
-    # import matplotlib.pyplot as plt
+    # Normalization parameters, recommended by PyTorch
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
 
-    # # Unnormalize function
-    # def unnormalize(image, mean, std):
-    #     image = image.numpy().transpose(1, 2, 0)
-    #     image = (image * np.array(std)) + np.array(mean)
-    #     image = np.clip(image, 0, 255)
-    #     return image
+    # Select 9 random samples
+    num_samples = 9
+    indices = list(range(min(num_samples, len(ds))))
 
-    # # Normalization parameters (same as in dataset)
-    # mean = [0.48235, 0.45882, 0.40784]
-    # std = [0.25] * 3  # Same std for all channels
+    # Create a 3x6 grid (image-mask pairs)
+    fig, axes = plt.subplots(3, 6, figsize=(12, 6))
 
-    # # Select 9 random samples
-    # num_samples = 9
-    # indices = list(range(min(num_samples, len(ds))))
+    for i, idx in enumerate(indices):
+        image, mask = ds[idx * 3]
 
-    # # Create a 3x6 grid (image-mask pairs)
-    # fig, axes = plt.subplots(3, 6, figsize=(12, 6))
+        # Unnormalize image
+        image = unnormalize(image, mean, std).astype(np.uint8)
 
-    # for i, idx in enumerate(indices):
-    #     image, mask = ds[idx * 3]
+        # Convert mask to numpy
+        mask = mask.squeeze().numpy()
 
-    #     # Unnormalize image
-    #     image = unnormalize(image, mean, std).astype('int64')
+        # Plot image
+        axes[i // 3, (i % 3) * 2].imshow(image)
+        axes[i // 3, (i % 3) * 2].set_title(f"Image {idx*3}")
+        axes[i // 3, (i % 3) * 2].axis("off")
 
-    #     # Convert mask to numpy
-    #     mask = mask.squeeze().numpy()
+        # Plot mask
+        axes[i // 3, (i % 3) * 2 + 1].imshow(mask, cmap="gray")
+        axes[i // 3, (i % 3) * 2 + 1].set_title(f"Mask {idx*3}")
+        axes[i // 3, (i % 3) * 2 + 1].axis("off")
 
-    #     # Plot image
-    #     axes[i // 3, (i % 3) * 2].imshow(image)
-    #     axes[i // 3, (i % 3) * 2].set_title(f"Image {idx*3}")
-    #     axes[i // 3, (i % 3) * 2].axis("off")
-
-    #     # Plot mask
-    #     axes[i // 3, (i % 3) * 2 + 1].imshow(mask, cmap="gray")
-    #     axes[i // 3, (i % 3) * 2 + 1].set_title(f"Mask {idx*3}")
-    #     axes[i // 3, (i % 3) * 2 + 1].axis("off")
-
-    # plt.tight_layout()
-    # plt.show()
+    plt.tight_layout()
+    plt.show()
