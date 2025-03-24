@@ -1,1 +1,13 @@
-*/archive
+# do not commit any archives
+**/archive
+
+
+### OC01 ###
+# model outputs (pictures, csv, saved models, etc.)
+**/outputs
+
+# trained model state_dict
+*.pth
+
+
+### OC02 ###

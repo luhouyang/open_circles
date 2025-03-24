@@ -150,7 +150,7 @@ def preprocess_catpp():
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # load data
-        for j in tqdm(range(min_len)):
+        for j in tqdm(range(1)):
             img_path = all_images_path[j]
             json_path = all_json_path[j]
 
@@ -176,15 +176,21 @@ def preprocess_catpp():
             if rows:
                 rows = np.array(rows)
 
+                parquet_path = f"{root_path}/parquet"
+                Path(parquet_path).mkdir(parents=True, exist_ok=True)
                 pl.DataFrame(rows).write_parquet(
-                    f"{root_path}/{folders[i]}_dataset.parquet")
+                    f"{parquet_path}/{folders[i]}_dataset.parquet")
 
+                csv_path = f"{root_path}/csv"
+                Path(csv_path).mkdir(parents=True, exist_ok=True)
                 pl.DataFrame(rows).write_csv(
-                    f"{root_path}/{folders[i]}_dataset.csv",
+                    f"{csv_path}/{folders[i]}_dataset.csv",
                     include_header=False,
                     include_bom=False)
 
-                with open(f"{root_path}/{folders[i]}_dataset.pkl",
+                pkl_path = f"{root_path}/pkl"
+                Path(pkl_path).mkdir(parents=True, exist_ok=True)
+                with open(f"{pkl_path}/{folders[i]}_dataset.pkl",
                           "wb") as pkl_file:
                     pickle.dump(rows_pickle, pkl_file)
 
@@ -196,6 +202,7 @@ def preprocess_catpp():
 
 
 if __name__ == '__main__':
-    root = r"D:\storage\feral-cat-segmentation.v1i.sam2"
+    # root = r"D:\storage\feral-cat-segmentation.v1i.sam2"
+    root = r"D:\feral-cat-segmentation.v1i.sam2"
     target_size = [224, 224]
     preprocess_catpp()

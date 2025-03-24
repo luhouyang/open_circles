@@ -14,23 +14,31 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 *Any code generated with GenAI is marked with explicit docstring comments*
 
-**Dataset**
+**Datasets**
 
-Download the dataset from [Kaggle](https://www.kaggle.com/datasets/luhouyang/feral-cat-segmentation-dataset/data) with your preferred format. We recommend `pkl`.
+1. Feral-Cat-Segmentation Dataset
 
-- pickle (0.706020459998399 seconds)
+    Download the dataset from [Kaggle](https://www.kaggle.com/datasets/luhouyang/feral-cat-segmentation-dataset/data) with your preferred format. We recommend `pkl`.
 
-- parquet (1.2935579999990297 seconds)
+    - pickle (0.706020459998399 seconds)
 
-- csv (ran out of memory 😰)
+    - parquet (1.2935579999990297 seconds)
 
-- jpg (not implemented)
+    - csv (ran out of memory 😰)
 
-- jpg + json (not implemented)
+    - jpg (not implemented)
 
-[dataset script](/OC01/dataset/catdataset.py)
+    - jpg + json (not implemented)
+ 
+    Test the dataset using [dataset script](/OC01/catdataset.py)
 
-![Dataset preview](/OC01/media/catdataset_viz.png)
+    ![Dataset preview](/OC01/media/catdataset_viz.png)
+
+1. Dogs vs. Cats
+
+    There is another dataset used to train the transfer learning model. Dataset from [Kaggle](https://www.kaggle.com/competitions/dogs-vs-cats/data?select=test1.zip). Download the `train.zip` & `test1.zip` and unzip the files.
+
+    Test the dataset using [dataset script](/OC01/dncdataset.py)
 
 **Setup & Run**
 
@@ -95,6 +103,8 @@ Download the dataset from [Kaggle](https://www.kaggle.com/datasets/luhouyang/fer
 
 - VGGNet | [paper](https://arxiv.org/abs/1409.1556) | [PyTorch](https://pytorch.org/hub/pytorch_vision_vgg/)
 
+- U-Net | [paper](https://arxiv.org/abs/1505.04597) | [PyTorch](https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/)
+
 - ResNet | [paper](https://arxiv.org/abs/1512.03385) | [PyTorch](https://pytorch.org/hub/pytorch_vision_resnet/)
 
 - DenseNet | [paper](https://arxiv.org/abs/1608.06993) | [PyTorch](https://pytorch.org/hub/pytorch_vision_densenet/)
@@ -107,7 +117,13 @@ Download the dataset from [Kaggle](https://www.kaggle.com/datasets/luhouyang/fer
 
 [preprocessing](/OC01/preprocess/)
 
+**Feral-Cat-Segmentation**
+
 ![Cats images & Masks](/OC01/media/dataset_viz.png)
+
+**Dogs vs. Cats**
+
+
 
 ## Future Additions TODO
 
