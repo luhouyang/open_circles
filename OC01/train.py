@@ -2,6 +2,11 @@
 Segmentation Model
 CNN, ViT
 
+CNN Models
+- LeNet-1   |   MSE_LOSS        |   SGD     |   weight_decay=0
+- AlexNet   |   CROSS-ENTROPY   |   SGD     |   momentum=0.9, weight_decay=0.0005 
+- U-Net     |   CROSS-ENTROPY   |   AdamW   |   
+
 author: Lu Hou Yang
 GitHub: https://github.com/luhouyang/open_circles.git
 date: 19 March 2025
@@ -19,7 +24,10 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from catdataset import CatDataset
+
+### CNN Models
 from cnn.model import CNNSegmentationModel, CNNSegmentationModelLoss
+from cnn.comparison_models import LeNet1, lenet1_weight_initializer, AlexNet, alexnet_weight_initializer
 
 
 def main():
@@ -33,13 +41,10 @@ def main():
     DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     ROOT = r"D:\storage\feral-cat-segmentation.v1i.sam2"
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\seg"
     IMAGE_SIZE = [224, 224]
     IMAGE_CHANNELS = 3
     MASK_CHANNELS = 1
     NUM_CLASSES = 2
-
-    Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
 
     train_loader = DataLoader(
         dataset=CatDataset(
@@ -77,11 +82,34 @@ def main():
     print("DATASET LOADED\n")
 
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
-    model = CNNSegmentationModel()
+
+    ##### U-Net
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
+    model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
+                                 num_classes=NUM_CLASSES)
 
     # criterion = CNNSegmentationModelLoss()
     # criterion = F.binary_cross_entropy_with_logits
     criterion = F.cross_entropy
+    ##### U-NET
+
+    # ##### LeNet-1
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
+    # model = LeNet1(in_channels=3, num_classes=2)
+    # model.apply(lenet1_weight_initializer)
+
+    # criterion = F.mse_loss
+    # ##### LeNet-1
+
+    # ##### AlexNet
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
+    # model = AlexNet(in_channels=3, num_classes=2)
+    # model.apply(alexnet_weight_initializer)
+
+    # criterion = F.cross_entropy  # multinomial logistic regression
+    # ##### AlexNet
+
+    Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
     ### a bit about Adam & AdamW
@@ -96,20 +124,45 @@ def main():
     #     weight_decay=0.005,
     #     betas=(0.9, 0.999),
     # )
+    ##### U-Net
     optimizer = optim.AdamW(
         model.parameters(),
         lr=LR,
         weight_decay=WEIGHT_DECAY,
         betas=(0.9, 0.999),
     )
+    ##### LeNet-1
+    # optimizer = optim.SGD(
+    #     model.parameters(),
+    #     lr=LR,
+    # )
+    ##### AlexNet
+    # optimizer = optim.SGD(
+    #     model.parameters(),
+    #     lr=0.01,
+    #     momentum=0.9,
+    #     weight_decay=0.0005,
+    # )
 
     ### a bit about schedulers & lr
     ### https://medium.com/data-science/a-visual-guide-to-learning-rate-schedulers-in-pytorch-24bbb262c863
+    ##### U-Net | LeNet-1
     scheduler = optim.lr_scheduler.StepLR(
         optimizer=optimizer,
-        step_size=10,
-        gamma=0.1,
+        step_size=20,
+        gamma=0.5,
     )
+    ##### AlexNet
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer,
+    #     mode='min',
+    #     factor=0.1,
+    #     patience=10,
+    #     verbose=True,
+    #     threshold=0.0001,
+    #     threshold_mode='rel',
+    #     min_lr=1e-6,
+    # )
 
     torchinfo.summary(model)
     torch.backends.cudnn.benchmark = True
@@ -141,7 +194,6 @@ def main():
             (np.array(total_iou_deno_class, dtype=float) + 1e-6))
 
         return acc, mIoU
-    # yapf: enable
 
     PCW = torch.Tensor(np.ones(NUM_CLASSES)).cuda()
 
@@ -165,10 +217,20 @@ def main():
         for i, (data, label) in tqdm(enumerate(train_loader),
                                      total=len(train_loader)):
             data = data.cuda()
-            label = label.cuda().permute(0, 3, 1, 2).squeeze(1).long()
+
+            label = label.cuda().permute(0, 3, 1, 2).squeeze(1).long()  # cross-entropy
+            # label = label.cuda().permute(0, 3, 1, 2).squeeze(1).float()  # mse_loss with SGD
 
             pred = model(data)
-            loss = criterion(pred, label, PCW)
+
+            loss = criterion(pred, label, PCW)  # cross-entropy
+            # ### mse_loss with SGD
+            # pred_probs = torch.sigmoid(pred)
+            # target = torch.zeros_like(pred_probs)
+            # target[:, 0, :, :] = 1 - label
+            # target[:, 1, :, :] = label
+            # loss = criterion(pred_probs, target, reduction='mean')
+            # ### mse_loss with SGD
 
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -179,8 +241,6 @@ def main():
             epoch_train_acc_list.append(acc)
             epoch_train_loss_list.append(loss.item())
             epoch_train_mIoU_list.append(mIoU)
-
-        scheduler.step()
 
         train_acc = np.mean(epoch_train_acc_list)
         train_loss = np.mean(epoch_train_loss_list)
@@ -200,10 +260,20 @@ def main():
             for i, (data, label) in tqdm(enumerate(test_loader),
                                          total=len(test_loader)):
                 data = data.cuda()
-                label = label.cuda().permute(0, 3, 1, 2).squeeze(1).long()
+
+                label = label.cuda().permute(0, 3, 1, 2).squeeze(1).long() # cross-entropy
+                # label = label.cuda().permute(0, 3, 1, 2).squeeze(1).float()  # mse_loss with SGD
 
                 pred = model(data)
-                loss = criterion(pred, label, PCW)
+
+                loss = criterion(pred, label, PCW) # cross-entropy
+                # ### mse_loss with SGD
+                # pred_probs = torch.sigmoid(pred)
+                # target = torch.zeros_like(pred_probs)
+                # target[:, 0, :, :] = 1 - label
+                # target[:, 1, :, :] = label
+                # loss = criterion(pred_probs, target, reduction='mean')
+                # ### mse_loss with SGD
 
                 acc, mIoU = metrics(pred, label)
 
@@ -214,6 +284,9 @@ def main():
         test_acc = np.mean(epoch_test_acc_list)
         test_loss = np.mean(epoch_test_loss_list)
         test_mIoU = np.mean(epoch_test_mIoU_list)
+
+        scheduler.step() # StepLR
+        # scheduler.step(test_acc) # OnPlateauReduceLR
 
         print(
             f"TEST | Loss: {test_loss} | Acc: {test_acc} | mIoU: {test_mIoU}\n"
@@ -227,8 +300,11 @@ def main():
         elif train_mIoU >= best_train_mIoU:
             best_train_mIoU = train_mIoU
             torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+        elif epoch % 5 == 0:
+            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
         elif epoch + 1 == EPOCHS:
             torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+    # yapf: enable
 
     with open(f"{SAVE_PATH}/log.csv", 'a', newline='') as csvfile:
         csvfile.write(write_str)

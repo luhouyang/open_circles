@@ -8,6 +8,7 @@ date: 19 March 2025
 
 from pathlib import Path
 import pickle
+import random
 from typing import Callable, Optional
 
 import numpy as np
@@ -17,12 +18,16 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
 import torch.nn as nn
 
 
 class CatDataset(Dataset):
 
-    __slots__ = ['data', 'masks', 'transform']
+    __slots__ = [
+        'data', 'masks', 'transform', 'random_transform', 'image_size',
+        'mask_channels'
+    ]
 
     def __init__(
         self,
@@ -33,6 +38,7 @@ class CatDataset(Dataset):
         image_size=[224, 224],
         image_channels: int = 3,
         mask_channels: int = 1,
+        random_transform: bool = True,
     ):
         """Feral cats segmentation dataset"""
         super(CatDataset, self).__init__()
@@ -96,6 +102,12 @@ class CatDataset(Dataset):
             self.masks = np.stack(masks).astype(np.uint8).reshape(
                 -1, image_size[0], image_size[1], mask_channels)
 
+        self.image_size = image_size
+
+        self.mask_channels = mask_channels
+
+        self.random_transform = random_transform
+
         self.transform = transform if transform != None else transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -109,10 +121,48 @@ class CatDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        return (
-            self.transform(self.data[index]),
-            torch.tensor(self.masks[index], dtype=torch.long),
-        )
+        if self.random_transform:
+            image, mask = self._random_transform(self.data[index],
+                                                 self.masks[index])
+
+            return (
+                self.transform(image),
+                torch.tensor(mask, dtype=torch.long),
+            )
+        else:
+            return (
+                self.transform(self.data[index]),
+                torch.tensor(self.masks[index], dtype=torch.long),
+            )
+
+    def _random_transform(self, image, mask):
+        image = TF.to_pil_image(image)
+        mask = TF.to_pil_image(mask)
+
+        # Color Jitter (Color Shift) image only
+        color_jitter = transforms.ColorJitter(brightness=0.2,
+                                              contrast=0.2,
+                                              saturation=0.2,
+                                              hue=0.1)
+        image = color_jitter(image)
+
+        # Random crop
+        i, j, h, w = transforms.RandomCrop.get_params(
+            image, output_size=[192, 192])
+        image = TF.resized_crop(image, i, j, h, w, self.image_size)
+        mask = TF.resized_crop(mask, i, j, h, w, self.image_size)
+
+        # Random rotation
+        # Causes edge values to be in negative range after Normalization, it is normal behaviour
+        angle = random.uniform(-15, 15)
+        image = TF.rotate(image, angle)
+        mask = TF.rotate(mask, angle)
+
+        image = np.array(image)
+        mask = np.array(mask).reshape(self.image_size[0], self.image_size[1],
+                                      self.mask_channels)
+
+        return image, mask
 
 
 if __name__ == '__main__':
@@ -127,7 +177,7 @@ if __name__ == '__main__':
         return CatDataset(
             root=root,
             split='train',
-            fformat='pkl',
+            fformat='parquet',
             image_size=image_size,
             image_channels=image_channels,
             mask_channels=mask_channels,
@@ -136,8 +186,8 @@ if __name__ == '__main__':
     ds = getds()
 
     # 5 iterations
-    # parquet:  6.467789999995148   seconds     1.2935579999990297  s/per
-    # pkl:      3.530102299991995   seconds     0.706020459998399   s/per
+    # parquet:  5.692191799986176    seconds    1.1384383599972352   s/per
+    # pkl:      2.6891325000324287   seconds    0.5378265000064857   s/per
     tt = timeit.timeit("getds()", globals=globals(), number=5)
 
     data, label = ds.__getitem__(0)

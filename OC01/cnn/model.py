@@ -12,9 +12,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+# Reading U-Net (arXiv): https://arxiv.org/abs/1505.04597
 # Reading Conv2d (Medium): https://medium.com/data-science/conv2d-to-finally-understand-what-happens-in-the-forward-pass-1bbaafb0b148
 # Reading Conv2d (PyTorch): https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
-#
 # Reading BatchNorm (TDS): https://towardsdatascience.com/batch-normalization-in-3-levels-of-understanding-14c2da90a338/
 #
 # Size of output image can be calculated with the formula from (PyTorch)
@@ -30,12 +30,11 @@ import torch.nn.functional as F
 # H_out = [224 + 2*1 - 1(3 - 1) - 1] / 1 + 1
 #       = 224 + 2 - 2 - 1 + 1
 #       = 224
-class DownConv(nn.Module):
+class ConvBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels):
-        super().__init__()
+        super(ConvBlock, self).__init__()
 
-        # MaxPool2d (2)
         # Conv2d    (in, out, 3, padding=1)
         # BatchNorm (out)
         # ReLU
@@ -43,7 +42,6 @@ class DownConv(nn.Module):
         # BatchNorm (out)
         # ReLU
         self.conv = nn.Sequential(
-            nn.MaxPool2d(2),
             nn.Conv2d(in_channels, out_channels, 3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
@@ -56,83 +54,100 @@ class DownConv(nn.Module):
         return self.conv(x)
 
 
-class CNNSegmentationModel(nn.Module):
+class DownConv(nn.Module):
 
-    def __init__(self):
-        super(CNNSegmentationModel, self).__init__()
+    def __init__(self, in_channels, out_channels):
+        super(DownConv, self).__init__()
 
-        self.down_conv1 = nn.Conv2d(3, 32, 3)
+        # MaxPool2d (2)
+        # ConvBlock (in, out)
+        self.maxpool = nn.MaxPool2d(2)
+
+        self.conv = ConvBlock(in_channels, out_channels)
 
     def forward(self, x):
-        x = self.down_conv1(x)
+        x = self.conv(x)
+        x = self.maxpool(x)
+        return x
+
+
+class UpConv(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(UpConv, self).__init__()
+
+        # Conv2d    (in, out, 3, padding=1)
+        # Upsample  (scale_factor=2, mode='bilinear', align_corners=True)
+        # ConvBlock (in, out)
+        self.up = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+        )
+
+        self.conv = ConvBlock(in_channels, out_channels)
+
+    def forward(self, x, skip_conn):
+        x = self.up(x)
+
+        # concat x & skip_conn at dimension 1
+        # x:            (B, C , H, W)
+        # skip_conn:    (B, C , H, W)
+        # result:       (B, 2C, H, W)
+        x = torch.cat([x, skip_conn], dim=1)
+
+        x = self.conv(x)
 
         return x
 
-    # def __init__(self):
-    #     super(CNNSegmentationModel, self).__init__()
-    #     # Encoder
-    #     self.encoder1 = nn.Sequential(
-    #         nn.Conv2d(3, 32, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(32),
-    #         nn.MaxPool2d(2, 2),
-    #     )
+# Acc: 0.9231848684297939 | mIoU: 0.7674362504791558
+class CNNSegmentationModel(nn.Module):
 
-    #     self.encoder2 = nn.Sequential(
-    #         nn.Conv2d(32, 64, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(64),
-    #         nn.Conv2d(64, 128, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(128),
-    #         nn.MaxPool2d(2, 2)
-    #     )
+    def __init__(self, in_channels, num_classes):
+        super(CNNSegmentationModel, self).__init__()
 
-    #     self.encoder3 = nn.Sequential(
-    #         nn.Conv2d(128, 256, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(256),
-    #         nn.MaxPool2d(2, 2)
-    #     )
+        # input
+        # in_channels -> 8
+        self.in_conv = ConvBlock(in_channels, 8)
 
-    #     # Decoder
-    #     self.decoder1 = nn.Sequential(
-    #         nn.Conv2d(256, 128, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(128),
-    #         nn.ConvTranspose2d(128, 128, 4, stride=2, padding=1),
-    #     )
+        # contracting (down, feature extraction)
+        # 8  -> 16
+        # 16 -> 32
+        # 32 -> 64
+        self.down_conv1 = DownConv(8, 16)
+        self.down_conv2 = DownConv(16, 32)
+        self.down_conv3 = DownConv(32, 64)
 
-    #     self.decoder2 = nn.Sequential(
-    #         nn.Conv2d(256, 64, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(64),
-    #         nn.Conv2d(64, 32, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(32),
-    #         nn.ConvTranspose2d(32, 32, 4, stride=2, padding=1),
-    #     )
+        # expansive (up, segmentation)
+        # (64/2, 32)  = 64  -> 32
+        # (32/2, 16)  = 32  -> 16
+        # (16/2, 8)   = 16  -> 8
+        self.up_conv1 = UpConv(64, 32)
+        self.up_conv2 = UpConv(32, 16)
+        self.up_conv3 = UpConv(16, 8)
 
-    #     self.decoder3 = nn.Sequential(
-    #         nn.Conv2d(64, 32, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.BatchNorm2d(32),
-    #         nn.Conv2d(32, 16, 3, padding=1),
-    #         nn.ReLU(inplace=True),
-    #         nn.ConvTranspose2d(16, 2, 4, stride=2, padding=1)
-    #     )
+        # output
+        # 8 -> num_classes
+        self.out_conv = nn.Sequential(
+            nn.Dropout2d(p=0.4),
+            ConvBlock(8, num_classes),
+        )
 
-    # def forward(self, x):
-    #     out1 = self.encoder1(x)
-    #     out2 = self.encoder2(out1)
-    #     x = self.encoder3(out2)
+    def forward(self, x):
+        out1 = self.in_conv(x)
 
-    #     x = self.decoder1(x)
-    #     x = torch.cat([x, out2], dim=1)
-    #     x = self.decoder2(x)
-    #     x = torch.cat([x, out1], dim=1)
-    #     x = self.decoder3(x)
-    #     return x
+        out2 = self.down_conv1(out1)
+        out3 = self.down_conv2(out2)
+        out4 = self.down_conv3(out3)
+
+        x = self.up_conv1(out4, out3)
+        x = self.up_conv2(x, out2)
+        x = self.up_conv3(x, out1)
+
+        x = self.out_conv(x)
+
+        return x
 
 
 class CNNSegmentationModelLoss(nn.Module):

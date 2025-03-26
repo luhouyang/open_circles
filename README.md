@@ -93,7 +93,7 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 - [Hisory of CNN](https://towardsdatascience.com/the-history-of-convolutional-neural-networks-for-image-classification-1989-today-5ea8a5c5fe20/)
 
-- LeNet-1 | [Original CNN Paper](https://www.academia.edu/download/47948178/lecun-89e.pdf)
+- LeNet-1 | [Original CNN Paper](https://scholar.google.com/citations?view_op=view_citation&hl=en&user=WLN3QrAAAAAJ&citation_for_view=WLN3QrAAAAAJ:u-x6o8ySG0sC)
 
 - LeNet-5 | [paper](https://www.researchgate.net/publication/2985446_Gradient-Based_Learning_Applied_to_Document_Recognition)
 
