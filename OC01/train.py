@@ -3,9 +3,10 @@ Segmentation Model
 CNN, ViT
 
 CNN Models
-- LeNet-1   |   MSE_LOSS        |   SGD     |   weight_decay=0
-- AlexNet   |   CROSS-ENTROPY   |   SGD     |   momentum=0.9, weight_decay=0.0005 
-- U-Net     |   CROSS-ENTROPY   |   AdamW   |   
+- LeNet-1   |   MSE_LOSS        |   SGD     |   lr=0.001, weight_decay=0                    |   StepLR
+- AlexNet   |   CROSS-ENTROPY   |   SGD     |   lr=0.01, momentum=0.9, weight_decay=0.0005  |   ReduceLROnPlateau
+- U-Net     |   CROSS-ENTROPY   |   AdamW   |   lr=0.001, weight_decay=0.01                 |   StepLR
+- VGG16     |   CROSS-ENTROPY   |   SGD     |   lr=0.01, momentum=0.9, weight_decay=0.0005  |   ReduceLROnPlateau
 
 author: Lu Hou Yang
 GitHub: https://github.com/luhouyang/open_circles.git
@@ -27,7 +28,7 @@ from catdataset import CatDataset
 
 ### CNN Models
 from cnn.model import CNNSegmentationModel, CNNSegmentationModelLoss
-from cnn.comparison_models import LeNet1, lenet1_weight_initializer, AlexNet, alexnet_weight_initializer
+from cnn.comparison_models import LeNet1, lenet1_weight_initializer, AlexNet, alexnet_weight_initializer, VGG16, vgg16_weight_initializer
 
 
 def main():
@@ -109,6 +110,15 @@ def main():
     # criterion = F.cross_entropy  # multinomial logistic regression
     # ##### AlexNet
 
+    # ##### VGG16
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\vgg"
+    # model = VGG16(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
+    # model.apply(vgg16_weight_initializer)
+
+    # # criterion = F.binary_cross_entropy_with_logits
+    # criterion = F.cross_entropy
+    # ##### VGG16
+
     Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
@@ -136,7 +146,7 @@ def main():
     #     model.parameters(),
     #     lr=LR,
     # )
-    ##### AlexNet
+    ##### AlexNet | VGG16
     # optimizer = optim.SGD(
     #     model.parameters(),
     #     lr=0.01,
@@ -152,7 +162,7 @@ def main():
         step_size=20,
         gamma=0.5,
     )
-    ##### AlexNet
+    ##### AlexNet | VGG16
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer,
     #     mode='min',
@@ -203,7 +213,6 @@ def main():
         csvfile.write(
             f"epoch,train_loss,train_acc,train_mIoU,test_loss,test_acc,test_mIoU\n"
         )
-    write_str = ""
 
     for epoch in range(EPOCHS):
         print(f"EPOCH: {epoch + 1}")
@@ -292,7 +301,8 @@ def main():
             f"TEST | Loss: {test_loss} | Acc: {test_acc} | mIoU: {test_mIoU}\n"
         )
 
-        write_str += f"{epoch+1},{train_loss},{train_acc},{train_mIoU},{test_loss},{test_acc},{test_mIoU}\n"
+        with open(f"{SAVE_PATH}/log.csv", 'a', newline='') as csvfile:
+            csvfile.write(f"{epoch+1},{train_loss},{train_acc},{train_mIoU},{test_loss},{test_acc},{test_mIoU}\n")
 
         if test_mIoU >= best_test_mIoU:
             best_test_mIoU = test_mIoU
@@ -305,9 +315,6 @@ def main():
         elif epoch + 1 == EPOCHS:
             torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
     # yapf: enable
-
-    with open(f"{SAVE_PATH}/log.csv", 'a', newline='') as csvfile:
-        csvfile.write(write_str)
 
 
 if __name__ == '__main__':

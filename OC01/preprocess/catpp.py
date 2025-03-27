@@ -29,16 +29,16 @@ def process_segmentation(json_path):
     with open(json_path, 'r') as file:
         data = json.load(file)
 
+    image_info = data.get('image', {})
     annotations = data.get('annotations', [])
     if not annotations:
         print(f"Error: No annotations found in {json_path}. Skipping...")
-        return [], []  # Skip processing this image
+        return [], image_info.get('file_name')  # Skip processing this image
 
     masks = []
     mask = []
     resized_annotations = []
 
-    image_info = data.get('image', {})
     image_id = image_info.get('image_id')
     file_name = image_info.get('file_name')
     original_height = image_info.get('height')
@@ -98,7 +98,7 @@ def process_segmentation(json_path):
 
 
 def preprocess_catpp():
-    """Preprocess cat pictures into parquet files for speed and space efficiency"""
+    """Preprocess cat pictures into parquet and pickle files for speed and space efficiency"""
 
     # Checks
     root_path = Path(root)
@@ -150,7 +150,7 @@ def preprocess_catpp():
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # load data
-        for j in tqdm(range(1)):
+        for j in tqdm(range(min_len)):
             img_path = all_images_path[j]
             json_path = all_json_path[j]
 
@@ -162,6 +162,9 @@ def preprocess_catpp():
             # json
             mask, file_name = process_segmentation(json_path)
 
+            if len(mask) == 0:
+                errors.append(file_name)
+
             if out_dir and len(mask) != 0:
                 mask_path = os.path.join(out_dir, file_name)
                 mask_image = Image.fromarray((mask * 255).astype(np.uint8))
@@ -172,28 +175,28 @@ def preprocess_catpp():
                 rows.append([*img.flatten(), *mask.flatten()])
                 rows_pickle.append([pickle.dumps(img), pickle.dumps(mask)])
 
+        if rows:
+            rows = np.array(rows)
+
+            parquet_path = f"{root_path}/parquet"
+            Path(parquet_path).mkdir(parents=True, exist_ok=True)
+            pl.DataFrame(rows).write_parquet(
+                f"{parquet_path}/{folders[i]}_dataset.parquet")
+
+            csv_path = f"{root_path}/csv"
+            Path(csv_path).mkdir(parents=True, exist_ok=True)
+            pl.DataFrame(rows).write_csv(
+                f"{csv_path}/{folders[i]}_dataset.csv",
+                include_header=False,
+                include_bom=False)
+
+            pkl_path = f"{root_path}/pkl"
+            Path(pkl_path).mkdir(parents=True, exist_ok=True)
+            with open(f"{pkl_path}/{folders[i]}_dataset.pkl",
+                      "wb") as pkl_file:
+                pickle.dump(rows_pickle, pkl_file)
+
         if len(errors) == 0:
-            if rows:
-                rows = np.array(rows)
-
-                parquet_path = f"{root_path}/parquet"
-                Path(parquet_path).mkdir(parents=True, exist_ok=True)
-                pl.DataFrame(rows).write_parquet(
-                    f"{parquet_path}/{folders[i]}_dataset.parquet")
-
-                csv_path = f"{root_path}/csv"
-                Path(csv_path).mkdir(parents=True, exist_ok=True)
-                pl.DataFrame(rows).write_csv(
-                    f"{csv_path}/{folders[i]}_dataset.csv",
-                    include_header=False,
-                    include_bom=False)
-
-                pkl_path = f"{root_path}/pkl"
-                Path(pkl_path).mkdir(parents=True, exist_ok=True)
-                with open(f"{pkl_path}/{folders[i]}_dataset.pkl",
-                          "wb") as pkl_file:
-                    pickle.dump(rows_pickle, pkl_file)
-
             print(
                 f"### No errors for {folders[i]} - {num_data[i]} masks ###\n")
         else:
@@ -202,7 +205,6 @@ def preprocess_catpp():
 
 
 if __name__ == '__main__':
-    # root = r"D:\storage\feral-cat-segmentation.v1i.sam2"
-    root = r"D:\feral-cat-segmentation.v1i.sam2"
+    root = r"D:\storage\feral-cat-segmentation.v1i.sam2"
     target_size = [224, 224]
     preprocess_catpp()

@@ -92,7 +92,6 @@ class LocalResponseNormalization(nn.Module):
         return b
 
 
-
 class AlexNet(nn.Module):
 
     def __init__(self, in_channels, num_classes):
@@ -263,13 +262,231 @@ def alexnet_weight_initializer(model):
                 layer_number += 1
 
 
+# Reading VGG (paper): https://arxiv.org/abs/1409.1556
+# Original (C): 133,638,952 | U-Net: 137,256 | Modified: 299,418
 class VGG16(nn.Module):
 
-    def __init__(self):
+    def __init__(self, in_channels, num_classes):
         super(VGG16, self).__init__()
 
+        # Original
+        # Conv2d    (in, 64, 3, padding=1)
+        # Conv2d    (64, 64, 3, padding=1)
+        # MaxPool2d (2)  224 -> 112
+
+        # Conv2d    (64, 128, 3, padding=1)
+        # Conv2d    (128, 128, 3, padding=1)
+        # MaxPool2d (2)  112 -> 56
+
+        # Conv2d    (128, 256, 3, padding=1)
+        # Conv2d    (256, 256, 3, padding=1)
+        # Conv2d    (256, 256, 1, padding=0)
+        # MaxPool2d (2)  56 -> 28
+
+        # Conv2d    (256, 512, 3, padding=1)
+        # Conv2d    (512, 512, 3, padding=1)
+        # Conv2d    (512, 512, 1, padding=0)
+        # MaxPool2d (2)  28 -> 14
+
+        # Conv2d    (512, 512, 3, padding=1)
+        # Conv2d    (512, 512, 3, padding=1)
+        # Conv2d    (512, 512, 1, padding=0)
+        # MaxPool2d (2)  14 -> 7
+
+        # Flatten
+        # Linear    (7*7*512, 4096)
+        # Dropout   (0.5)
+        # Linear    (4096, 4096)
+        # Dropout   (0.5)
+        # Linear    (4096, 1000)
+        # SoftMax
+
+        # self.conv1 = nn.Sequential(
+        #     nn.Conv2d(in_channels, 64, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(64, 64, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(2),
+        # )
+
+        # self.conv2 = nn.Sequential(
+        #     nn.Conv2d(64, 128, 3, padding=1),
+        #     nn.ReLU(inplace=True),
+        #     nn.Conv2d(128, 128, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(2),
+        # )
+
+        # self.conv3 = nn.Sequential(
+        #     nn.Conv2d(128, 256, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(256, 256, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(256, 256, 1, padding=0),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(2),
+        # )
+
+        # self.conv4 = nn.Sequential(
+        #     nn.Conv2d(256, 512, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(512, 512, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(512, 512, 1, padding=0),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(2),
+        # )
+
+        # self.conv5 = nn.Sequential(
+        #     nn.Conv2d(512, 512, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(512, 512, 3, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(512, 512, 1, padding=0),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d(2),
+        # )
+
+        # self.flatten = nn.Flatten()
+
+        # self.fc = nn.Sequential(
+        #     nn.Linear(7 * 7 * 512, 4096),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.5),
+        #     nn.Linear(4096, 4096),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.5),
+        #     nn.Linear(4096, 1000),
+        #     nn.Softmax(),
+        # )
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(8, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(8, 16, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(16, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(32, 56, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(56, 56, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(56, 56, 1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.conv5 = nn.Sequential(
+            nn.Conv2d(56, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
+        self.conv6 = nn.Sequential(
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 56, 1, padding=0),
+            nn.ReLU(),
+        )
+
+        self.conv7 = nn.Sequential(
+            nn.Conv2d(56, 56, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(56, 56, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(56, 32, 1, padding=0),
+            nn.ReLU(),
+        )
+
+        self.conv8 = nn.Sequential(
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 16, 1, padding=0),
+            nn.ReLU(),
+        )
+
+        self.conv9 = nn.Sequential(
+            nn.Conv2d(16, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.Dropout2d(0.5),
+            nn.Conv2d(16, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.Dropout2d(0.5),
+        )
+
+        self.conv10 = nn.Sequential(
+            nn.Conv2d(8, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(8, num_classes, 3, padding=1),
+        )
+
     def forward(self, x):
-        pass
+        # x = self.conv1(x)
+        # x = self.conv2(x)
+        # x = self.conv3(x)
+        # x = self.conv4(x)
+        # x = self.conv5(x)
+        # x = self.flatten(x)
+        # x = self.fc(x)
+        # return x
+
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+
+        x = self.conv6(self.upsample(x))
+        x = self.conv7(self.upsample(x))
+        x = self.conv8(self.upsample(x))
+        x = self.conv9(self.upsample(x))
+        x = self.conv10(self.upsample(x))
+        return x
+
+
+# Reading Xavier Glorot & Yoshua Bengio | Weight Initialization (paper): https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf
+def vgg16_weight_initializer(model):
+    for layer in model.modules():
+        if isinstance(layer, (nn.Conv2d, nn.Linear)):
+            gain = init.calculate_gain('relu')
+
+            init.xavier_uniform_(layer.weight, gain=gain)
+
+            if layer.bias is not None:
+                init.zeros_(layer.bias)
+
+        if isinstance(layer, nn.ReLU):
+            layer.inplace = True
 
 
 class ResNet(nn.Module):
@@ -358,16 +575,19 @@ if __name__ == '__main__':
     # model = LeNet1(in_channels=3, num_classes=2)
     # model.apply(lenet1_weight_initializer)
 
-    model = AlexNet(in_channels=3, num_classes=2)
-    model.apply(alexnet_weight_initializer)
+    # model = AlexNet(in_channels=3, num_classes=2)
+    # model.apply(alexnet_weight_initializer)
     # model = LocalResponseNormalization()
+
+    model = VGG16(in_channels=3, num_classes=2)
+    model.apply(vgg16_weight_initializer)
 
     output = model(sample_input)
 
     print(output.shape)
     visualize_flattened_tensor(sample_input)
     visualize_flattened_tensor(output)
-    
+
     import torchinfo
     torchinfo.summary(model)
 

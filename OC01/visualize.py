@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from cnn.comparison_models import LeNet1, AlexNet
+from cnn.comparison_models import LeNet1, AlexNet, VGG16
 from catdataset import CatDataset
 from cnn.model import CNNSegmentationModel
 
@@ -44,9 +44,10 @@ def main():
     DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     ROOT = r"D:\storage\feral-cat-segmentation.v1i.sam2"
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
-    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\vgg"
     MODEL_NAME = r"100_cnn.pth"
     IMAGE_SIZE = [224, 224]
     IMAGE_CHANNELS = 3
@@ -73,10 +74,11 @@ def main():
 
     ### a bit about loading models
     ### Reading: https://pytorch.org/tutorials/beginner/saving_loading_models.html
-    model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
-                                 num_classes=NUM_CLASSES)
+    # model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
+    #                              num_classes=NUM_CLASSES)
     # model = LeNet1(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
-    # model = AlexNet(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
+    model = AlexNet(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
+    # model = VGG16(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
     model.load_state_dict(
         torch.load(f"{SAVE_PATH}/{MODEL_NAME}", weights_only=True))
     model = model.eval()

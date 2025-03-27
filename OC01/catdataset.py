@@ -140,23 +140,36 @@ class CatDataset(Dataset):
         mask = TF.to_pil_image(mask)
 
         # Color Jitter (Color Shift) image only
-        color_jitter = transforms.ColorJitter(brightness=0.2,
-                                              contrast=0.2,
-                                              saturation=0.2,
-                                              hue=0.1)
+        color_jitter = transforms.ColorJitter(brightness=0.3,
+                                              contrast=0.3,
+                                              saturation=0.3,
+                                              hue=0.2)
         image = color_jitter(image)
 
-        # Random crop
-        i, j, h, w = transforms.RandomCrop.get_params(
-            image, output_size=[192, 192])
-        image = TF.resized_crop(image, i, j, h, w, self.image_size)
-        mask = TF.resized_crop(mask, i, j, h, w, self.image_size)
+        # # Random crop
+        # i, j, h, w = transforms.RandomCrop.get_params(
+        #     image, output_size=[192, 192])
+        # image = TF.resized_crop(image, i, j, h, w, self.image_size)
+        # mask = TF.resized_crop(mask, i, j, h, w, self.image_size)
 
-        # Random rotation
-        # Causes edge values to be in negative range after Normalization, it is normal behaviour
+        # # Random rotation
+        # # Causes edge values to be in negative range after Normalization, 
+        # # it is normal behaviour because edges from rotation are filled with black
+        # angle = random.uniform(-15, 15)
+        # image = TF.rotate(image, angle)
+        # mask = TF.rotate(mask, angle)
+
+        image = TF.resize(image, (256, 256))
+        mask = TF.resize(mask, (256, 256))
+
         angle = random.uniform(-15, 15)
         image = TF.rotate(image, angle)
         mask = TF.rotate(mask, angle)
+
+        i, j, h, w = transforms.RandomCrop.get_params(image,
+                                                      output_size=[224, 224])
+        image = TF.crop(image, i, j, h, w)
+        mask = TF.crop(mask, i, j, h, w)
 
         image = np.array(image)
         mask = np.array(mask).reshape(self.image_size[0], self.image_size[1],
