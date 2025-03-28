@@ -406,7 +406,9 @@ class VGG16(nn.Module):
             nn.MaxPool2d(2),
         )
 
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(scale_factor=2,
+                                    mode='bilinear',
+                                    align_corners=True)
 
         self.conv6 = nn.Sequential(
             nn.Conv2d(64, 64, 3, padding=1),
@@ -489,6 +491,8 @@ def vgg16_weight_initializer(model):
             layer.inplace = True
 
 
+# Reading ResNet (paper): https://arxiv.org/abs/1512.03385
+# Original: | U-Net: 137,256 | Modified:
 class ResNet(nn.Module):
 
     def __init__(self):
@@ -496,6 +500,10 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         pass
+
+
+def resnet_weight_initialize(model):
+    pass
 
 
 import matplotlib.pyplot as plt
@@ -579,8 +587,11 @@ if __name__ == '__main__':
     # model.apply(alexnet_weight_initializer)
     # model = LocalResponseNormalization()
 
-    model = VGG16(in_channels=3, num_classes=2)
-    model.apply(vgg16_weight_initializer)
+    # model = VGG16(in_channels=3, num_classes=2)
+    # model.apply(vgg16_weight_initializer)
+
+    model = ResNet()
+    model.apply(resnet_weight_initialize)
 
     output = model(sample_input)
 
