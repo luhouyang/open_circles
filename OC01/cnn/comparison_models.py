@@ -24,7 +24,7 @@ import torch.nn.init as init
 
 
 # Reading LeNet-1 (paper): https://scholar.google.com/citations?view_op=view_citation&hl=en&user=WLN3QrAAAAAJ&citation_for_view=WLN3QrAAAAAJ:u-x6o8ySG0sC
-# Original: 5,126 | U-Net: 137,256 | Modified: 157,762
+# Original: 5,126 | U-Net: 135,264 | Modified: 157,762
 class LeNet1(nn.Module):
     # yapf: disable
     def __init__(self, in_channels, num_classes):
@@ -74,7 +74,7 @@ def lenet1_weight_initializer(model):
 
 # yapf: disable
 # Reading AlexNet (paper): https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwie-_vy_d6LAxW_zDgGHQIBO9gQFnoECAgQAQ&url=https%3A%2F%2Fproceedings.neurips.cc%2Fpaper%2F4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf&usg=AOvVaw26V5YkBm0FS972qI4eBNgu&opi=89978449
-# Original: 60,000,000 | U-Net: 137,256 | Modified: 271,846
+# Original: 60,000,000 | U-Net: 135,264 | Modified: 271,846
 # CNN with ReLU, Overlapping MaxPooling, Dropout
 class LocalResponseNormalization(nn.Module):
 
@@ -263,7 +263,7 @@ def alexnet_weight_initializer(model):
 
 
 # Reading VGG (paper): https://arxiv.org/abs/1409.1556
-# Original (C): 133,638,952 | U-Net: 137,256 | Modified: 299,418
+# Original (C): 133,638,952 | U-Net: 135,264 | Modified: 299,418
 class VGG16(nn.Module):
 
     def __init__(self, in_channels, num_classes):
@@ -493,7 +493,7 @@ def vgg16_weight_initializer(model):
 
 # Reading ResNet (paper): https://arxiv.org/abs/1512.03385
 # Code from: https://github.com/JayPatwardhan/ResNet-PyTorch
-# Original: 25,583,528 | U-Net: 137,256 | Modified:
+# Original: 25,583,528 | U-Net: 135,264 | Modified:
 class Bottleneck(nn.Module):
     expansion = 4
 

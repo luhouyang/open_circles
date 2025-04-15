@@ -40,7 +40,7 @@ def main():
     EPOCHS = 100  # CNN: 100 | SETR: 200
     WORKERS = 2  # number of cpu to load data
     PREFETCH_FACTOR = 4  # number of batch to prefetch
-    BATCH_SIZE = 32  # CNN: 32 | SETR: 16
+    BATCH_SIZE = 16  # CNN: 32 | SETR: 16
     LR = 0.001  # Optimizer learning rate
     WEIGHT_DECAY = 0.01  # L2 Regularization
 
@@ -89,15 +89,15 @@ def main():
 
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
-    ##### U-Net
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
-    model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
-                                 num_classes=NUM_CLASSES)
+    # ##### U-Net
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
+    # model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
+    #                              num_classes=NUM_CLASSES)
 
-    # criterion = CNNSegmentationModelLoss()
-    # criterion = F.binary_cross_entropy_with_logits
-    criterion = F.cross_entropy
-    ##### U-NET
+    # # criterion = CNNSegmentationModelLoss()
+    # # criterion = F.binary_cross_entropy_with_logits
+    # criterion = F.cross_entropy
+    # ##### U-NET
 
     # ##### LeNet-1
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
@@ -144,26 +144,26 @@ def main():
     # criterion = SETRLoss()
     # ##### SETR
 
-    # ##### Combined
-    # # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr"
-    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\combine\outputs\combine_xxl"
-    # model = CombineModel(
-    #     channels=IMAGE_CHANNELS,
-    #     depth=3,
-    #     dim=32,
-    #     dim_head=32,
-    #     dropout=0.2,
-    #     emb_dropout=0.2,
-    #     heads=3,
-    #     image_size=224,
-    #     mlp_dim=48,
-    #     num_classes=NUM_CLASSES,
-    #     patch_size=16,
-    #     RESF=64
-    # )
+    ##### Combined
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\combine\outputs\combine_xxl"
+    model = CombineModel(
+        channels=IMAGE_CHANNELS,
+        depth=3,
+        dim=32,
+        dim_head=32,
+        dropout=0.2,
+        emb_dropout=0.2,
+        heads=3,
+        image_size=224,
+        mlp_dim=48,
+        num_classes=NUM_CLASSES,
+        patch_size=16,
+        RESF=64
+    )
 
-    # criterion = CombineModelLoss(dim=32, RESF=64)
-    # ##### Combined
+    criterion = CombineModelLoss(dim=32, RESF=64)
+    ##### Combined
 
     Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
@@ -181,12 +181,12 @@ def main():
     #     betas=(0.9, 0.999),
     # )
     ##### U-Net
-    optimizer = optim.AdamW(
-        model.parameters(),
-        lr=LR,
-        weight_decay=WEIGHT_DECAY,
-        betas=(0.9, 0.999),
-    )
+    # optimizer = optim.AdamW(
+    #     model.parameters(),
+    #     lr=LR,
+    #     weight_decay=WEIGHT_DECAY,
+    #     betas=(0.9, 0.999),
+    # )
     ##### LeNet-1
     # optimizer = optim.SGD(
     #     model.parameters(),
@@ -200,21 +200,21 @@ def main():
     #     weight_decay=0.0005,
     # )
     ##### SETR
-    # optimizer = optim.SGD(
-    #     model.parameters(),
-    #     lr=0.01,
-    #     momentum=0.9,
-    #     weight_decay=0.0005,
-    # )
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=0.01,
+        momentum=0.9,
+        weight_decay=0.0005,
+    )
 
     ### a bit about schedulers & lr
     ### https://medium.com/data-science/a-visual-guide-to-learning-rate-schedulers-in-pytorch-24bbb262c863
     ##### U-Net | LeNet-1
-    scheduler = optim.lr_scheduler.StepLR(
-        optimizer=optimizer,
-        step_size=20,
-        gamma=0.5,
-    )
+    # scheduler = optim.lr_scheduler.StepLR(
+    #     optimizer=optimizer,
+    #     step_size=20,
+    #     gamma=0.5,
+    # )
     ##### AlexNet | VGG16
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer,
@@ -227,11 +227,11 @@ def main():
     #     min_lr=1e-6,
     # )
     ##### SETR
-    # scheduler = optim.lr_scheduler.PolynomialLR(
-    #     optimizer,
-    #     total_iters=EPOCHS,
-    #     power=0.9,
-    # )
+    scheduler = optim.lr_scheduler.PolynomialLR(
+        optimizer,
+        total_iters=EPOCHS,
+        power=0.9,
+    )
 
     torchinfo.summary(model)
     torch.backends.cudnn.benchmark = True
@@ -312,7 +312,7 @@ def main():
             loss.backward()
             optimizer.step()
 
-            acc, mIoU = metrics(pred, label)
+            acc, mIoU = metrics(pred[0], label)
 
             epoch_train_acc_list.append(acc)
             epoch_train_loss_list.append(loss.item())
@@ -354,7 +354,7 @@ def main():
                 # loss = criterion(pred_probs, target, reduction='mean')
                 # ### mse_loss with SGD
 
-                acc, mIoU = metrics(pred, label)
+                acc, mIoU = metrics(pred[0], label)
 
                 epoch_test_acc_list.append(acc)
                 epoch_test_loss_list.append(loss.item())
