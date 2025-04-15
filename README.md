@@ -113,6 +113,8 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 - ConvNeXt | [paper](https://arxiv.org/abs/2201.03545) | [PyTorch](https://pytorch.org/vision/main/models/convnext.html)
 
+- SETR | [paper](https://arxiv.org/abs/2012.15840)
+
 **Data Preprocessing & Visualization**
 
 [preprocessing](/OC01/preprocess/)
@@ -120,10 +122,6 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 **Feral-Cat-Segmentation**
 
 ![Cats images & Masks](/OC01/media/dataset_viz.png)
-
-**Dogs vs. Cats**
-
-
 
 ## Future Additions TODO
 
