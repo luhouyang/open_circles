@@ -1,22 +1,19 @@
 """
-Segmentation Model
-ViT, SETR-PUP (Segmentation Transformer - Progressive Upsampling)
-
-SGD Optimizer momentum=0.9, weight_decay=0, LR=0.001 
+U-Net + SETR
 
 author: Lu Hou Yang
 GitHub: https://github.com/luhouyang/open_circles.git
-date: 25 March 2025
+date: 7 April 2025
 """
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 import numpy as np
 # Reading einops (Medium): https://medium.com/@kyeg/einops-in-30-seconds-377a5f4d641a
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Embedding(nn.Module):
@@ -70,6 +67,70 @@ class Embedding(nn.Module):
         return t if isinstance(t, tuple) else (t, t)
 
     # yapf: enable
+
+
+class UNET(nn.Module):
+
+    def __init__(self, channels, RESF):
+        super(UNET, self).__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(channels, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.MaxPool2d(2),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.MaxPool2d(2),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv4 = nn.Sequential(
+            nn.MaxPool2d(2),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv5 = nn.Sequential(
+            nn.MaxPool2d(2),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(RESF, RESF, 3, padding=1),
+            nn.BatchNorm2d(RESF),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x):
+        c1 = self.conv1(x)
+        c2 = self.conv2(c1)
+        c3 = self.conv3(c2)
+        c4 = self.conv4(c3)
+        c5 = self.conv5(c4)
+
+        return c1, c2, c3, c4, c5
 
 
 # re-encode previous tokens into higher level features
@@ -170,39 +231,44 @@ class Transformer(nn.Module):
 
 class Segment(nn.Module):
 
-    def __init__(self, num_classes, dim, dropout, image_height):
+    def __init__(self, num_classes, dim, dropout, image_height, RESF):
         super(Segment, self).__init__()
 
+        TOTAL = dim + RESF
+
         self.upsample1 = nn.Sequential(
-            nn.Conv2d(dim, 32, 1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(dim + RESF, dim, 1),
+            nn.BatchNorm2d(dim),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, align_corners=True, mode='bilinear'),
         )
 
         self.upsample2 = nn.Sequential(
-            nn.Conv2d(32, 32, 3, padding=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(TOTAL, dim, 3, padding=1),
+            nn.BatchNorm2d(dim),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, align_corners=True, mode='bilinear'),
         )
 
         self.upsample3 = nn.Sequential(
-            nn.Conv2d(32, 32, 3, padding=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(TOTAL, dim, 3, padding=1),
+            nn.BatchNorm2d(dim),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, align_corners=True, mode='bilinear'),
         )
 
         self.upsample4 = nn.Sequential(
-            nn.Conv2d(32, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(TOTAL, dim, 3, padding=1),
+            nn.BatchNorm2d(dim),
             nn.ReLU(inplace=True),
             nn.Upsample(scale_factor=2, align_corners=True, mode='bilinear'),
         )
 
         self.out = nn.Sequential(
-            nn.Conv2d(16, 16, 3, padding=1),
+            nn.Conv2d(TOTAL, TOTAL, 3, padding=1),
+            nn.BatchNorm2d(TOTAL),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(TOTAL, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout + 0.2),
@@ -211,7 +277,7 @@ class Segment(nn.Module):
 
         self.image_height = image_height
 
-    def forward(self, x):
+    def forward(self, x, c1, c2, c3, c4, c5):
         # B, N, _ = x.shape
 
         # cls_tokens = x[:, 0, :].reshape(B, 1, -1)
@@ -220,16 +286,25 @@ class Segment(nn.Module):
         # x += cls_tokens[:, :N]
 
         x = rearrange(x, 'b (h w) c -> b c h w', h=self.image_height)
+        x = torch.cat([x, c5], dim=1)
         x1 = self.upsample1(x)
+
+        x1 = torch.cat([x1, c4], dim=1)
         x2 = self.upsample2(x1)
+
+        x2 = torch.cat([x2, c3], dim=1)
         x3 = self.upsample3(x2)
+
+        x3 = torch.cat([x3, c2], dim=1)
         x4 = self.upsample4(x3)
+
+        x4 = torch.cat([x4, c1], dim=1)
         x5 = self.out(x4)
 
         return x5, x4, x3, x2, x1
 
 
-class SETR(nn.Module):
+class CombineModel(nn.Module):
 
     def __init__(
         self,
@@ -239,13 +314,16 @@ class SETR(nn.Module):
         depth,
         heads,
         dim=64,
+        RESF=32,
         mlp_dim=128,
         channels=3,
         dim_head=64,
         dropout=0.,
         emb_dropout=0.,
     ):
-        super(SETR, self).__init__()
+        super(CombineModel, self).__init__()
+
+        self.unet = UNET(channels=channels, RESF=RESF)
 
         self.embedding = Embedding(image_size=image_size,
                                    patch_size=patch_size,
@@ -263,34 +341,38 @@ class SETR(nn.Module):
         self.segment = Segment(num_classes=num_classes,
                                dim=dim,
                                dropout=dropout,
-                               image_height=14)
+                               image_height=14,
+                               RESF=RESF)
 
     def forward(self, x):
+        c1, c2, c3, c4, c5 = self.unet(x)
         x = self.embedding(x)
         x = self.transformer(x)
-        x = self.segment(x)
+        x = self.segment(x, c1, c2, c3, c4, c5)
 
         return x
 
 
-class SETRLoss(nn.Module):
+class CombineModelLoss(nn.Module):
 
-    def __init__(self):
-        super(SETRLoss, self).__init__()
+    def __init__(self, dim, RESF):
+        super(CombineModelLoss, self).__init__()
+
+        TOTAL = dim + RESF
 
         self.aux1 = nn.Sequential(
             nn.Upsample(scale_factor=8, align_corners=True, mode='bilinear'),
-            nn.Conv2d(32, 2, 1, bias=False),
+            nn.Conv2d(TOTAL, 2, 1, bias=False),
         ).cuda()
         self.aux2 = nn.Sequential(
             nn.Upsample(scale_factor=4, align_corners=True, mode='bilinear'),
-            nn.Conv2d(32, 2, 1, bias=False),
+            nn.Conv2d(TOTAL, 2, 1, bias=False),
         ).cuda()
         self.aux3 = nn.Sequential(
             nn.Upsample(scale_factor=2, align_corners=True, mode='bilinear'),
-            nn.Conv2d(32, 2, 1, bias=False),
+            nn.Conv2d(TOTAL, 2, 1, bias=False),
         ).cuda()
-        self.aux4 = nn.Sequential(nn.Conv2d(16, 2, 1, bias=False), ).cuda()
+        self.aux4 = nn.Sequential(nn.Conv2d(TOTAL, 2, 1, bias=False), ).cuda()
 
         self.creterion = F.cross_entropy
 

@@ -72,7 +72,7 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
     ```console
     cd OC01
-    pip install polars pillow pycocotools tqdm ipykernel torchinfo
+    pip install polars pillow pycocotools tqdm ipykernel torchinfo einops
     ```
 
     *install with caution, as the pytorch version in requirements.txt might not match*

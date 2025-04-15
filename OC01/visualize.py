@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import torchinfo
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -10,6 +11,10 @@ from torch.utils.data import DataLoader
 from cnn.comparison_models import LeNet1, AlexNet, VGG16
 from catdataset import CatDataset
 from cnn.model import CNNSegmentationModel
+
+from attn.model import SETR
+
+from combine.model import CombineModel
 
 
 # Unnormalize function
@@ -46,9 +51,14 @@ def main():
     ROOT = r"D:\storage\feral-cat-segmentation.v1i.sam2"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\vgg"
-    MODEL_NAME = r"100_cnn.pth"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr2"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\combine\outputs\combine2"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\combine\outputs\combine_xxl"
+
+    # MODEL_NAME = r"100_cnn.pth"
+    MODEL_NAME = r"100_setr.pth"
     IMAGE_SIZE = [224, 224]
     IMAGE_CHANNELS = 3
     MASK_CHANNELS = 1
@@ -77,10 +87,57 @@ def main():
     # model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
     #                              num_classes=NUM_CLASSES)
     # model = LeNet1(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
-    model = AlexNet(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
+    # model = AlexNet(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
     # model = VGG16(in_channels=IMAGE_CHANNELS, num_classes=NUM_CLASSES)
+
+    # model = SETR(
+    #     channels=IMAGE_CHANNELS,
+    #     depth=3,
+    #     dim=32,
+    #     dim_head=64,
+    #     dropout=0.1,
+    #     emb_dropout=0.1,
+    #     heads=3,
+    #     image_size=224,
+    #     mlp_dim=64,
+    #     num_classes=NUM_CLASSES,
+    #     patch_size=16,
+    # )
+
+    # model = CombineModel(
+    #     channels=IMAGE_CHANNELS,
+    #     depth=2,
+    #     dim=16,
+    #     dim_head=32,
+    #     dropout=0.2,
+    #     emb_dropout=0.2,
+    #     heads=2,
+    #     image_size=224,
+    #     mlp_dim=32,
+    #     num_classes=NUM_CLASSES,
+    #     patch_size=16,
+    #     RESF=16
+    # )
+
+    model = CombineModel(
+        channels=IMAGE_CHANNELS,
+        depth=3,
+        dim=32,
+        dim_head=32,
+        dropout=0.2,
+        emb_dropout=0.2,
+        heads=3,
+        image_size=224,
+        mlp_dim=48,
+        num_classes=NUM_CLASSES,
+        patch_size=16,
+        RESF=64
+    )
+
     model.load_state_dict(
         torch.load(f"{SAVE_PATH}/{MODEL_NAME}", weights_only=True))
+
+    torchinfo.summary(model)
     model = model.eval()
 
     # DO NOT delete formatting comments starting with 'yapf'
@@ -88,7 +145,7 @@ def main():
     ACC_DIVISOR = BATCH_SIZE * (NUM_CLASSES - 1) * IMAGE_SIZE[0] * IMAGE_SIZE[1]
     def metrics(pred, label):
         label = label.cpu().numpy().astype(np.uint8)
-        pred_choice = pred.cpu().data.max(1)[1].numpy().astype(np.uint8).reshape(-1, 224, 224, 1)
+        pred_choice = pred[0].cpu().data.max(1)[1].numpy().astype(np.uint8).reshape(-1, 224, 224, 1)
         correct = np.sum(pred_choice == label)
         acc = correct / ACC_DIVISOR
 
@@ -117,7 +174,7 @@ def main():
 
     for i, (data, label) in enumerate(tqdm(val_loader)):
         pred = model(data)
-        pred_choice = pred.cpu().data.max(1)[1].numpy().astype('int64')
+        pred_choice = pred[0].cpu().data.max(1)[1].numpy().astype('int64')
 
         preds.append(pred_choice)
         labels.append(label)

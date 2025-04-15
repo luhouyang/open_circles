@@ -9,7 +9,7 @@ Before going to the specifics, contributions to Open Circles should follow these
     - Hands-On Session Implementing CNN for Semantic Segmentation
     - Introduction to Attention Mechanism & Transformer Architecture
     - Introduction to Visual Transformers ViT
-    - Hands-On Session Implementing ViT for Semantic Segmentation
+    - Hands-On Session Implementing SETR for Semantic Segmentation
 
 - Expected materials are:
     - Source code

@@ -30,12 +30,17 @@ from catdataset import CatDataset
 from cnn.model import CNNSegmentationModel, CNNSegmentationModelLoss
 from cnn.comparison_models import LeNet1, lenet1_weight_initializer, AlexNet, alexnet_weight_initializer, VGG16, vgg16_weight_initializer
 
+### ViT (SETR) Model
+from attn.model import SETR, SETRLoss
+
+### Combined Model (Residual + SETR)
+from combine.model import CombineModel, CombineModelLoss
 
 def main():
-    EPOCHS = 100
+    EPOCHS = 100  # CNN: 100 | SETR: 200
     WORKERS = 2  # number of cpu to load data
     PREFETCH_FACTOR = 4  # number of batch to prefetch
-    BATCH_SIZE = 32
+    BATCH_SIZE = 16  # CNN: 32 | SETR: 16
     LR = 0.001  # Optimizer learning rate
     WEIGHT_DECAY = 0.01  # L2 Regularization
 
@@ -84,15 +89,15 @@ def main():
 
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
-    ##### U-Net
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
-    model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
-                                 num_classes=NUM_CLASSES)
+    # ##### U-Net
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
+    # model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
+    #                              num_classes=NUM_CLASSES)
 
-    # criterion = CNNSegmentationModelLoss()
-    # criterion = F.binary_cross_entropy_with_logits
-    criterion = F.cross_entropy
-    ##### U-NET
+    # # criterion = CNNSegmentationModelLoss()
+    # # criterion = F.binary_cross_entropy_with_logits
+    # criterion = F.cross_entropy
+    # ##### U-NET
 
     # ##### LeNet-1
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
@@ -119,6 +124,47 @@ def main():
     # criterion = F.cross_entropy
     # ##### VGG16
 
+    # ##### SETR
+    # # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr"
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr2"
+    # model = SETR(
+    #     channels=IMAGE_CHANNELS,
+    #     depth=3,
+    #     dim=32,
+    #     dim_head=64,
+    #     dropout=0.1,
+    #     emb_dropout=0.1,
+    #     heads=3,
+    #     image_size=224,
+    #     mlp_dim=64,
+    #     num_classes=NUM_CLASSES,
+    #     patch_size=16,
+    # )
+
+    # criterion = SETRLoss()
+    # ##### SETR
+
+    ##### Combined
+    # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\attn\outputs\setr"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\combine\outputs\combine_xxl"
+    model = CombineModel(
+        channels=IMAGE_CHANNELS,
+        depth=3,
+        dim=32,
+        dim_head=32,
+        dropout=0.2,
+        emb_dropout=0.2,
+        heads=3,
+        image_size=224,
+        mlp_dim=48,
+        num_classes=NUM_CLASSES,
+        patch_size=16,
+        RESF=64
+    )
+
+    criterion = CombineModelLoss(dim=32, RESF=64)
+    ##### Combined
+
     Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
@@ -135,12 +181,12 @@ def main():
     #     betas=(0.9, 0.999),
     # )
     ##### U-Net
-    optimizer = optim.AdamW(
-        model.parameters(),
-        lr=LR,
-        weight_decay=WEIGHT_DECAY,
-        betas=(0.9, 0.999),
-    )
+    # optimizer = optim.AdamW(
+    #     model.parameters(),
+    #     lr=LR,
+    #     weight_decay=WEIGHT_DECAY,
+    #     betas=(0.9, 0.999),
+    # )
     ##### LeNet-1
     # optimizer = optim.SGD(
     #     model.parameters(),
@@ -153,15 +199,22 @@ def main():
     #     momentum=0.9,
     #     weight_decay=0.0005,
     # )
+    ##### SETR
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=0.01,
+        momentum=0.9,
+        weight_decay=0.0005,
+    )
 
     ### a bit about schedulers & lr
     ### https://medium.com/data-science/a-visual-guide-to-learning-rate-schedulers-in-pytorch-24bbb262c863
     ##### U-Net | LeNet-1
-    scheduler = optim.lr_scheduler.StepLR(
-        optimizer=optimizer,
-        step_size=20,
-        gamma=0.5,
-    )
+    # scheduler = optim.lr_scheduler.StepLR(
+    #     optimizer=optimizer,
+    #     step_size=20,
+    #     gamma=0.5,
+    # )
     ##### AlexNet | VGG16
     # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
     #     optimizer,
@@ -173,6 +226,12 @@ def main():
     #     threshold_mode='rel',
     #     min_lr=1e-6,
     # )
+    ##### SETR
+    scheduler = optim.lr_scheduler.PolynomialLR(
+        optimizer,
+        total_iters=EPOCHS,
+        power=0.9,
+    )
 
     torchinfo.summary(model)
     torch.backends.cudnn.benchmark = True
@@ -232,7 +291,10 @@ def main():
 
             pred = model(data)
 
-            loss = criterion(pred, label, PCW)  # cross-entropy
+            loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
+
+            # loss = criterion(pred, label, PCW) # cross-entropy
+
             # ### mse_loss with SGD
             # pred_probs = torch.sigmoid(pred)
             # target = torch.zeros_like(pred_probs)
@@ -242,10 +304,15 @@ def main():
             # ### mse_loss with SGD
 
             optimizer.zero_grad(set_to_none=True)
+            # loss.backward()
+            loss1.backward(retain_graph=True)
+            loss2.backward(retain_graph=True)
+            loss3.backward(retain_graph=True)
+            loss4.backward(retain_graph=True)
             loss.backward()
             optimizer.step()
 
-            acc, mIoU = metrics(pred, label)
+            acc, mIoU = metrics(pred[0], label)
 
             epoch_train_acc_list.append(acc)
             epoch_train_loss_list.append(loss.item())
@@ -275,7 +342,10 @@ def main():
 
                 pred = model(data)
 
-                loss = criterion(pred, label, PCW) # cross-entropy
+                loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
+
+                # loss = criterion(pred, label, PCW) # cross-entropy
+
                 # ### mse_loss with SGD
                 # pred_probs = torch.sigmoid(pred)
                 # target = torch.zeros_like(pred_probs)
@@ -284,7 +354,7 @@ def main():
                 # loss = criterion(pred_probs, target, reduction='mean')
                 # ### mse_loss with SGD
 
-                acc, mIoU = metrics(pred, label)
+                acc, mIoU = metrics(pred[0], label)
 
                 epoch_test_acc_list.append(acc)
                 epoch_test_loss_list.append(loss.item())
@@ -294,7 +364,7 @@ def main():
         test_loss = np.mean(epoch_test_loss_list)
         test_mIoU = np.mean(epoch_test_mIoU_list)
 
-        scheduler.step() # StepLR
+        scheduler.step() # StepLR | PolynomialLR
         # scheduler.step(test_acc) # OnPlateauReduceLR
 
         print(
@@ -304,16 +374,17 @@ def main():
         with open(f"{SAVE_PATH}/log.csv", 'a', newline='') as csvfile:
             csvfile.write(f"{epoch+1},{train_loss},{train_acc},{train_mIoU},{test_loss},{test_acc},{test_mIoU}\n")
 
+        postfix = '_setr'
         if test_mIoU >= best_test_mIoU:
             best_test_mIoU = test_mIoU
-            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}{postfix}.pth")
         elif train_mIoU >= best_train_mIoU:
             best_train_mIoU = train_mIoU
-            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}{postfix}.pth")
         elif epoch % 5 == 0:
-            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}{postfix}.pth")
         elif epoch + 1 == EPOCHS:
-            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}_cnn.pth")
+            torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}{postfix}.pth")
     # yapf: enable
 
 
