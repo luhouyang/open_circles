@@ -36,6 +36,7 @@ from attn.model import SETR, SETRLoss
 ### Combined Model (Residual + SETR)
 from combine.model import CombineModel, CombineModelLoss
 
+
 def main():
     EPOCHS = 100  # CNN: 100 | SETR: 200
     WORKERS = 2  # number of cpu to load data
@@ -90,7 +91,7 @@ def main():
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
     ##### U-Net
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet_sm"
     model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
                                  num_classes=NUM_CLASSES)
 
@@ -291,9 +292,9 @@ def main():
 
             pred = model(data)
 
-            loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
+            # loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
 
-            # loss = criterion(pred, label, PCW) # cross-entropy
+            loss = criterion(pred, label, PCW) # cross-entropy
 
             # ### mse_loss with SGD
             # pred_probs = torch.sigmoid(pred)
@@ -304,12 +305,12 @@ def main():
             # ### mse_loss with SGD
 
             optimizer.zero_grad(set_to_none=True)
-            # loss.backward()
-            loss1.backward(retain_graph=True)
-            loss2.backward(retain_graph=True)
-            loss3.backward(retain_graph=True)
-            loss4.backward(retain_graph=True)
             loss.backward()
+            # loss1.backward(retain_graph=True)
+            # loss2.backward(retain_graph=True)
+            # loss3.backward(retain_graph=True)
+            # loss4.backward(retain_graph=True)
+            # loss.backward()
             optimizer.step()
 
             acc, mIoU = metrics(pred, label)
@@ -342,9 +343,9 @@ def main():
 
                 pred = model(data)
 
-                loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
+                # loss, loss4, loss3, loss2, loss1 = criterion(pred, label, PCW)
 
-                # loss = criterion(pred, label, PCW) # cross-entropy
+                loss = criterion(pred, label, PCW) # cross-entropy
 
                 # ### mse_loss with SGD
                 # pred_probs = torch.sigmoid(pred)
@@ -374,7 +375,7 @@ def main():
         with open(f"{SAVE_PATH}/log.csv", 'a', newline='') as csvfile:
             csvfile.write(f"{epoch+1},{train_loss},{train_acc},{train_mIoU},{test_loss},{test_acc},{test_mIoU}\n")
 
-        postfix = '_setr'
+        postfix = '_cnn'
         if test_mIoU >= best_test_mIoU:
             best_test_mIoU = test_mIoU
             torch.save(model.state_dict(), f"{SAVE_PATH}/{epoch+1}{postfix}.pth")

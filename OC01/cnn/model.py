@@ -101,6 +101,7 @@ class UpConv(nn.Module):
 
         return x
 
+
 # Acc: 0.9231848684297939 | mIoU: 0.7674362504791558
 class CNNSegmentationModel(nn.Module):
 
@@ -109,29 +110,29 @@ class CNNSegmentationModel(nn.Module):
 
         # input
         # in_channels -> 8
-        self.in_conv = ConvBlock(in_channels, 8)
+        self.in_conv = ConvBlock(in_channels, 6)
 
         # contracting (down, feature extraction)
         # 8  -> 16
         # 16 -> 32
         # 32 -> 64
-        self.down_conv1 = DownConv(8, 16)
-        self.down_conv2 = DownConv(16, 32)
-        self.down_conv3 = DownConv(32, 64)
+        self.down_conv1 = DownConv(6, 12)
+        self.down_conv2 = DownConv(12, 24)
+        self.down_conv3 = DownConv(24, 48)
 
         # expansive (up, segmentation)
         # (64/2, 32)  = 64  -> 32
         # (32/2, 16)  = 32  -> 16
         # (16/2, 8)   = 16  -> 8
-        self.up_conv1 = UpConv(64, 32)
-        self.up_conv2 = UpConv(32, 16)
-        self.up_conv3 = UpConv(16, 8)
+        self.up_conv1 = UpConv(48, 24)
+        self.up_conv2 = UpConv(24, 12)
+        self.up_conv3 = UpConv(12, 6)
 
         # output
         # 8 -> num_classes
         self.out_conv = nn.Sequential(
             nn.Dropout2d(p=0.4),
-            ConvBlock(8, num_classes),
+            ConvBlock(6, num_classes),
         )
 
     def forward(self, x):
