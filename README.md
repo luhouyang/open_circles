@@ -125,5 +125,4 @@ Open Circles : Bridging Minds Beyond Borders is an international university coll
 
 ## Future Additions TODO
 
-- Add documentation for Linux, MacOS, etc. platforms. (job for future maintainers)
 - Move setup documentation to respective folders
