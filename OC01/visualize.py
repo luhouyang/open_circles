@@ -49,7 +49,7 @@ def main():
     DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     ROOT = r"D:\storage\feral-cat-segmentation.v1i.sam2"
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet_sm"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet_xl"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\lenet"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\alexnet"
     # SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\vgg"

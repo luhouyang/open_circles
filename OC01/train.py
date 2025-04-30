@@ -91,7 +91,7 @@ def main():
     ### EDIT THIS PART FOR DIFFERENT MODELS ###
 
     ##### U-Net
-    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet_sm"
+    SAVE_PATH = r"C:\Users\User\Desktop\Python\open_circles\OC01\cnn\outputs\unet"
     model = CNNSegmentationModel(in_channels=IMAGE_CHANNELS,
                                  num_classes=NUM_CLASSES)
 
